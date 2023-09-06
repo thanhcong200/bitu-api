@@ -43,7 +43,7 @@ export class AuthService {
     };
     const tokens = await this.generateToken(payload);
     return {
-      id: user.id,
+      id: user._id,
       username: user.username,
       role: user.role,
       ...tokens,

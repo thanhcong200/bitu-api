@@ -9,11 +9,8 @@ export class Member {
   @Prop({ type: mongoose.Types.ObjectId, ref: 'User' })
   id: object;
 
-  @Prop({ default: true })
-  username: boolean;
-
-  @Prop({ default: false })
-  isSeen: boolean;
+  @Prop({ type: mongoose.Types.ObjectId, ref: 'Message' })
+  messageId: object;
 }
 @Schema({
   timestamps: true,
