@@ -24,3 +24,12 @@ export const QUEUE_SETTINGS = {
 export const MAX_RETRY = 3;
 
 export const TIME_WAIT_RETRY = 300;
+
+export const USER_AVATARS = [
+  'https://bootdey.com/img/Content/avatar/avatar1.png',
+  'https://bootdey.com/img/Content/avatar/avatar2.png',
+  'https://bootdey.com/img/Content/avatar/avatar3.png',
+  'https://bootdey.com/img/Content/avatar/avatar7.png',
+  'https://bootdey.com/img/Content/avatar/avatar8.png',
+  'https://bootdey.com/img/Content/avatar/avatar3.png',
+];

@@ -6,7 +6,7 @@ import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from 'src/schemas/User.schema';
 import { ApiError } from 'src/common/api';
-import { ErrorCode } from 'src/common/constants';
+import { ErrorCode, USER_AVATARS } from 'src/common/constants';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -61,9 +61,12 @@ export class AuthService {
       requestData.password,
       this.SALT_ROUND,
     );
+    const indexAvatar = Math.floor(Math.random() * USER_AVATARS.length);
+    const avatar = USER_AVATARS[indexAvatar];
     const createdUser = new this.userModel({
       username: requestData.username.trim(),
       password: hashedPassword,
+      avatar,
     });
     return createdUser.save();
   }

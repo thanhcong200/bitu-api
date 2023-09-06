@@ -8,6 +8,7 @@ import { RedisClientOptions } from 'redis';
 import * as redisStore from 'cache-manager-redis-store';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SocketModule } from './providers/socket/socket.module';
+import { RoomModule } from './room/room.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { SocketModule } from './providers/socket/socket.module';
     SocketModule,
     AuthModule,
     UsersModule,
+    RoomModule,
   ],
   controllers: [AppController],
   providers: [AppService],

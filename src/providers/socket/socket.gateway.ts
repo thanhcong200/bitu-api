@@ -37,17 +37,13 @@ export class SocketGateway
   }
 
   async handleConnection(client: Socket, ...args: any[]) {
-    if (!client.handshake.query['address']) {
-      this.logger.error(`Missing required parameters: address`);
+    if (!client.handshake.query['groupId']) {
+      this.logger.error(`Missing required parameters: groupId`);
       client.disconnect(true);
       return;
     }
     const groupId: string = client.handshake.query['groupId'].toString();
     this.logger.log(`Client connected [${client.id}]: ${groupId}`);
-    const user = await this.userModel.findOne({ groupId });
     client.join(groupId);
-    client.join(
-      user?.role === UserRole.ADMIN ? SOCKET_ROOM.ADMIN : SOCKET_ROOM.USER,
-    );
   }
 }

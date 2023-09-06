@@ -1,5 +1,6 @@
 import {
   IsNotEmpty,
+  IsOptional,
   IsString,
   IsStrongPassword,
   MaxLength,
@@ -26,4 +27,8 @@ export class CreateUserDto {
   )
   @MaxLength(20, { message: 'Max length: 20' })
   password: string;
+
+  @IsOptional()
+  @IsString()
+  avatar: string;
 }
