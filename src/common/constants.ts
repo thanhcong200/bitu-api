@@ -31,5 +31,4 @@ export const USER_AVATARS = [
   'https://bootdey.com/img/Content/avatar/avatar3.png',
   'https://bootdey.com/img/Content/avatar/avatar7.png',
   'https://bootdey.com/img/Content/avatar/avatar8.png',
-  'https://bootdey.com/img/Content/avatar/avatar3.png',
 ];

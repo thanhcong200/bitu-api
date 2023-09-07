@@ -23,17 +23,20 @@ export class RoomService {
     @InjectModel(Room.name) private readonly roomModel: Model<RoomDocument>,
   ) {}
   async create(createRoomDto: CreateRoomDto) {
-    const membersId = createRoomDto.members
+    const validMembersId = createRoomDto.members
       .split(',')
-      .filter((id) => id.trim().length > 0)
-      .map((id) => Utils.toObjectId(id));
-    const [users, existGroup] = await Promise.all([
+      .filter((id) => id.trim().length > 0);
+    const membersId = validMembersId.map((id) => Utils.toObjectId(id));
+    const [users, rooms] = await Promise.all([
       this.userModel.find({ _id: { $in: membersId } }).lean(),
-      this.roomModel.findOne({ 'members.id': { $in: membersId } }).lean(),
+      this.roomModel.find({ 'members.id': { $in: membersId } }).lean(),
     ]);
-
+    const existRoom = rooms.find((room) => {
+      const ids = room.members.map((member) => member.id.toString());
+      return ids.includes(validMembersId[0]) && ids.includes(validMembersId[1]);
+    });
     // check exist group
-    if (users.length < 2 || existGroup)
+    if (users.length != 2 || existRoom)
       throw ApiError(ErrorCode.INVALID_DATA, 'Invalid data');
 
     const members = users.map((user) => {
@@ -46,8 +49,7 @@ export class RoomService {
     return room.save();
   }
 
-  findAll(requestData: RoomSearchDto) {
-    const { userId } = requestData;
+  findAll(userId: string, requestData: RoomSearchDto) {
     const pipeline: mongoose.PipelineStage[] = [
       {
         $match: {
@@ -72,10 +74,11 @@ export class RoomService {
                 id: '$_id',
                 username: '$username',
                 avatar: '$avatar',
+                isOnline: '$isOnline',
               },
             },
           ],
-          as: 'members',
+          as: 'informationMembers',
         },
       },
       {
@@ -124,18 +127,36 @@ export class RoomService {
             },
             {
               $sort: {
-                createdAt: 1,
+                createdAt: -1,
               },
             },
           ],
           as: 'messagesRoom',
         },
       },
+      {
+        $project: {
+          informationMembers: '$informationMembers',
+          seenRooms: '$members',
+          partner: {
+            $first: {
+              $filter: {
+                input: '$informationMembers',
+                as: 'infMember',
+                cond: { $ne: ['$$infMember.id', Utils.toObjectId(userId)] },
+              },
+            },
+          },
+          name: '$name',
+          lastMessage: { $first: '$messagesRoom' },
+        },
+      },
     ];
     return Utils.aggregatePaginate(this.roomModel, pipeline, requestData);
   }
 
-  findOne(id: string) {
+  findOne(id: string, userId: string) {
+    console.log(userId);
     const pipeline: mongoose.PipelineStage[] = [
       {
         $match: {
@@ -144,6 +165,31 @@ export class RoomService {
       },
       {
         $lookup: {
+          from: 'users',
+          let: { localField: '$members.id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: ['$_id', '$$localField'],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                id: '$_id',
+                username: '$username',
+                avatar: '$avatar',
+                isOnline: '$isOnline',
+              },
+            },
+          ],
+          as: 'informationMembers',
+        },
+      },
+      {
+        $lookup: {
           from: 'messages',
           let: { localField: '$_id' },
           pipeline: [
@@ -193,6 +239,23 @@ export class RoomService {
             },
           ],
           as: 'messagesRoom',
+        },
+      },
+      {
+        $project: {
+          informationMembers: '$informationMembers',
+          seenRooms: '$members',
+          partner: {
+            $first: {
+              $filter: {
+                input: '$informationMembers',
+                as: 'infMember',
+                cond: { $ne: ['$$infMember.id', Utils.toObjectId(userId)] },
+              },
+            },
+          },
+          name: '$name',
+          messages: '$messagesRoom',
         },
       },
     ];

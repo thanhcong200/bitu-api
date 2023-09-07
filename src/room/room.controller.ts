@@ -17,6 +17,7 @@ import { Role } from 'src/auth/role.enum';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
+import { CurrentUser } from 'src/common/decorators/user.decorator';
 
 @Controller('rooms')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -30,13 +31,13 @@ export class RoomController {
   }
 
   @Get()
-  findAll(@Query() requestData: RoomSearchDto) {
-    return this.roomService.findAll(requestData);
+  findAll(@CurrentUser() user, @Query() requestData: RoomSearchDto) {
+    return this.roomService.findAll(user.id, requestData);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.roomService.findOne(id);
+  findOne(@CurrentUser() user, @Param('id') id: string) {
+    return this.roomService.findOne(id, user.id);
   }
 
   @Post('receive-message')
