@@ -9,8 +9,6 @@ export class AppService {
   ) {}
 
   getHello() {
-    return 'Ekoios';
+    return 'Bitu';
   }
-
-  
 }

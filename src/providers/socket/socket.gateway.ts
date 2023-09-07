@@ -7,10 +7,12 @@ import {
   OnGatewayInit,
   WebSocketGateway,
   WebSocketServer,
+  SubscribeMessage,
 } from '@nestjs/websockets';
 import { Socket, Server } from 'socket.io';
-import { User, UserDocument, UserRole } from 'src/schemas/User.schema';
-import { SOCKET_ROOM } from './socket.enum';
+import { User, UserDocument } from 'src/schemas/User.schema';
+import { ReceiveMessageDto } from 'src/room/dto/receive-message.dto';
+import { RoomService } from 'src/room/room.service';
 
 @WebSocketGateway({
   cors: true,
@@ -23,6 +25,7 @@ export class SocketGateway
   constructor(
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
+    private roomService: RoomService,
   ) {}
 
   @WebSocketServer()
@@ -37,13 +40,22 @@ export class SocketGateway
   }
 
   async handleConnection(client: Socket, ...args: any[]) {
-    if (!client.handshake.query['groupId']) {
-      this.logger.error(`Missing required parameters: groupId`);
+    if (!client.handshake.query['roomId']) {
+      this.logger.error(`Missing required parameters: roomId`);
       client.disconnect(true);
       return;
     }
-    const groupId: string = client.handshake.query['groupId'].toString();
-    this.logger.log(`Client connected [${client.id}]: ${groupId}`);
-    client.join(groupId);
+    const roomId: string = client.handshake.query['roomId'].toString();
+    this.logger.log(`Client connected [${client.id}]: ${roomId}`);
+    client.join(roomId);
+  }
+
+  @SubscribeMessage('messages')
+  async handleMessages(client: Socket, payload: ReceiveMessageDto) {
+    const message = (await this.roomService.receiveMessage(payload))[0];
+
+    client.to(payload.roomId).emit('message-recieve', {
+      message,
+    });
   }
 }
