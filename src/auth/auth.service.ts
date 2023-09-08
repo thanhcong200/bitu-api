@@ -41,6 +41,7 @@ export class AuthService {
       username: requestData.username,
       role: user.role,
     };
+    console.log(payload);
     const tokens = await this.generateToken(payload);
     return {
       id: user._id,

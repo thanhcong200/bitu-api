@@ -35,26 +35,33 @@ export class SocketGateway
     this.logger.log('Initialize WebSocket');
   }
 
-  handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`);
+  async handleDisconnect(client: Socket) {
+    this.logger.log(
+      `Client disconnected: ${client.id}`,
+      client.handshake.query['roomId'],
+    );
+    const roomId: string = client.handshake.query['roomId'].toString();
+
+    await this.userModel.findByIdAndUpdate(roomId, {
+      $set: { isOnline: false },
+    });
   }
 
   async handleConnection(client: Socket, ...args: any[]) {
-    if (!client.handshake.query['roomId']) {
-      this.logger.error(`Missing required parameters: roomId`);
-      client.disconnect(true);
-      return;
+    if (client.handshake.query['roomId']) {
+      const roomId: string = client.handshake.query['roomId'].toString();
+      this.logger.log(`Client connected roomId = ${roomId}`);
+      // await this.userModel.findByIdAndUpdate(roomId, {
+      //   $set: { isOnline: true },
+      // });
+      client.join(roomId);
     }
-    const roomId: string = client.handshake.query['roomId'].toString();
-    this.logger.log(`Client connected [${client.id}]: ${roomId}`);
-    client.join(roomId);
   }
 
   @SubscribeMessage('messages')
   async handleMessages(client: Socket, payload: ReceiveMessageDto) {
-    const message = (await this.roomService.receiveMessage(payload))[0];
-
-    client.to(payload.roomId).emit('message-recieve', {
+    const message = await this.roomService.receiveMessage(payload);
+    client.emit('message-recieve', {
       message,
     });
   }

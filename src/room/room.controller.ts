@@ -36,8 +36,8 @@ export class RoomController {
   }
 
   @Get(':id')
-  findOne(@CurrentUser() user, @Param('id') id: string) {
-    return this.roomService.findOne(id, user.id);
+  findOne(@Param('id') id: string, @Query() requestData: RoomSearchDto) {
+    return this.roomService.findOne(id, requestData);
   }
 
   @Post('receive-message')

@@ -1,14 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import mongoose from 'mongoose';
+import { Sender } from './Message.schema';
 
 const aggregatePaginate = require('mongoose-aggregate-paginate-v2');
 
 export type RoomDocument = Room & Document;
-export class Member {
-  @Prop({ type: mongoose.Types.ObjectId, ref: 'User' })
-  id: object;
-
+export class Member extends Sender {
   @Prop({ type: mongoose.Types.ObjectId, ref: 'Message' })
   messageId: object;
 }

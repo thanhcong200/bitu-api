@@ -42,6 +42,8 @@ export class RoomService {
     const members = users.map((user) => {
       return {
         id: user._id,
+        username: user.username,
+        avatar: user.avatar,
         messageId: null,
       };
     });
@@ -53,216 +55,31 @@ export class RoomService {
     const pipeline: mongoose.PipelineStage[] = [
       {
         $match: {
-          'members.id': { $in: [Utils.toObjectId(userId)] },
+          'sender.id': Utils.toObjectId(userId),
         },
       },
       {
-        $lookup: {
-          from: 'users',
-          let: { localField: '$members.id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $in: ['$_id', '$$localField'],
-                },
-              },
-            },
-            {
-              $project: {
-                _id: 0,
-                id: '$_id',
-                username: '$username',
-                avatar: '$avatar',
-                isOnline: '$isOnline',
-              },
-            },
-          ],
-          as: 'informationMembers',
+        $sort: {
+          createdAt: -1,
         },
       },
       {
-        $lookup: {
-          from: 'messages',
-          let: { localField: '$_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: ['$$localField', '$roomId'],
-                },
-              },
-            },
-
-            {
-              $lookup: {
-                from: 'users',
-                let: { localField: '$senderId' },
-                pipeline: [
-                  {
-                    $match: {
-                      $expr: {
-                        $eq: ['$$localField', '$_id'],
-                      },
-                    },
-                  },
-                  {
-                    $project: {
-                      id: '$id',
-                      username: '$username',
-                      avatar: '$avatar',
-                    },
-                  },
-                ],
-                as: 'sender',
-              },
-            },
-            {
-              $project: {
-                id: '$id',
-                sender: { $first: '$sender' },
-                message: '$message',
-                createdAt: '$createdAt',
-              },
-            },
-            {
-              $sort: {
-                createdAt: -1,
-              },
-            },
-          ],
-          as: 'messagesRoom',
-        },
-      },
-      {
-        $project: {
-          informationMembers: '$informationMembers',
-          seenRooms: '$members',
-          partner: {
-            $first: {
-              $filter: {
-                input: '$informationMembers',
-                as: 'infMember',
-                cond: { $ne: ['$$infMember.id', Utils.toObjectId(userId)] },
-              },
-            },
-          },
-          name: '$name',
-          lastMessage: { $first: '$messagesRoom' },
-        },
+        $group: { _id: '$roomId' },
+        lastMessage: 
       },
     ];
-    return Utils.aggregatePaginate(this.roomModel, pipeline, requestData);
+    return Utils.aggregatePaginate(this.messageModel, pipeline, requestData);
   }
 
-  findOne(id: string, userId: string) {
-    console.log(userId);
+  findOne(id: string, requestData: RoomSearchDto) {
     const pipeline: mongoose.PipelineStage[] = [
       {
         $match: {
-          _id: Utils.toObjectId(id),
-        },
-      },
-      {
-        $lookup: {
-          from: 'users',
-          let: { localField: '$members.id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $in: ['$_id', '$$localField'],
-                },
-              },
-            },
-            {
-              $project: {
-                _id: 0,
-                id: '$_id',
-                username: '$username',
-                avatar: '$avatar',
-                isOnline: '$isOnline',
-              },
-            },
-          ],
-          as: 'informationMembers',
-        },
-      },
-      {
-        $lookup: {
-          from: 'messages',
-          let: { localField: '$_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: ['$$localField', '$roomId'],
-                },
-              },
-            },
-
-            {
-              $lookup: {
-                from: 'users',
-                let: { localField: '$senderId' },
-                pipeline: [
-                  {
-                    $match: {
-                      $expr: {
-                        $eq: ['$$localField', '$_id'],
-                      },
-                    },
-                  },
-                  {
-                    $project: {
-                      id: '$id',
-                      username: '$username',
-                      avatar: '$avatar',
-                    },
-                  },
-                ],
-                as: 'sender',
-              },
-            },
-            {
-              $project: {
-                id: '$id',
-                sender: { $first: '$sender' },
-                message: '$message',
-                createdAt: '$createdAt',
-              },
-            },
-            {
-              $sort: {
-                createdAt: 1,
-              },
-            },
-          ],
-          as: 'messagesRoom',
-        },
-      },
-      {
-        $project: {
-          informationMembers: '$informationMembers',
-          seenRooms: '$members',
-          partner: {
-            $first: {
-              $filter: {
-                input: '$informationMembers',
-                as: 'infMember',
-                cond: { $ne: ['$$infMember.id', Utils.toObjectId(userId)] },
-              },
-            },
-          },
-          name: '$name',
-          messages: '$messagesRoom',
+          roomId: Utils.toObjectId(id),
         },
       },
     ];
-    return Utils.aggregatePaginate(this.roomModel, pipeline, {
-      page: 1,
-      limit: 10,
-    });
+    return Utils.aggregatePaginate(this.messageModel, pipeline, requestData);
   }
 
   async receiveMessage(requestData: ReceiveMessageDto) {
@@ -279,7 +96,11 @@ export class RoomService {
     if (!user || !room) throw ApiError(ErrorCode.INVALID_DATA, 'invalid data');
     const messageObj = await this.messageModel.create({
       roomId: Utils.toObjectId(roomId),
-      senderId: user._id,
+      sender: {
+        id: user._id,
+        username: user.username,
+        avatar: user.avatar,
+      },
       message,
     });
     room.members.forEach((member) => {
@@ -287,10 +108,17 @@ export class RoomService {
         member.messageId = messageObj._id;
       }
     });
-    return Promise.all([
+    await Promise.all([
       messageObj.save(),
       this.roomModel.findByIdAndUpdate(roomId, {}),
     ]);
+    return {
+      _id: messageObj._id,
+      roomId: roomId,
+      sender: { _id: user._id, username: user.username, avatar: user.avatar },
+      name: room.name,
+      message: messageObj.message,
+    };
   }
 
   async seenMessage(requestData: SeenMessageDto) {}
