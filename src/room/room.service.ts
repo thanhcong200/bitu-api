@@ -55,20 +55,32 @@ export class RoomService {
     const pipeline: mongoose.PipelineStage[] = [
       {
         $match: {
-          'sender.id': Utils.toObjectId(userId),
+          'members.id': { $in: [Utils.toObjectId(userId)] },
         },
       },
       {
-        $sort: {
-          createdAt: -1,
+        $project: {
+          _id: 1,
+          members: 1,
+          partner: {
+            $first: {
+              $filter: {
+                input: '$members',
+                as: 'infMember',
+                cond: { $ne: ['$$infMember.id', Utils.toObjectId(userId)] },
+              },
+            },
+          },
+          lastMessage: 1,
         },
-      },
-      {
-        $group: { _id: '$roomId' },
-        lastMessage: 
       },
     ];
-    return Utils.aggregatePaginate(this.messageModel, pipeline, requestData);
+    return Utils.aggregatePaginate(this.roomModel, pipeline, {
+      ...requestData,
+      sort: {
+        'lastMessage.createdAt': 'desc',
+      },
+    });
   }
 
   findOne(id: string, requestData: RoomSearchDto) {
@@ -79,7 +91,10 @@ export class RoomService {
         },
       },
     ];
-    return Utils.aggregatePaginate(this.messageModel, pipeline, requestData);
+    return Utils.aggregatePaginate(this.messageModel, pipeline, {
+      ...requestData,
+      sort: { createdAt: 'asc' },
+    });
   }
 
   async receiveMessage(requestData: ReceiveMessageDto) {
@@ -110,14 +125,13 @@ export class RoomService {
     });
     await Promise.all([
       messageObj.save(),
-      this.roomModel.findByIdAndUpdate(roomId, {}),
+      this.roomModel.findByIdAndUpdate(roomId, {
+        $set: { lastMessage: messageObj, members: room.members },
+      }),
     ]);
     return {
-      _id: messageObj._id,
-      roomId: roomId,
-      sender: { _id: user._id, username: user.username, avatar: user.avatar },
-      name: room.name,
-      message: messageObj.message,
+      message: messageObj,
+      members: room.members,
     };
   }
 

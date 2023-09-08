@@ -51,18 +51,20 @@ export class SocketGateway
     if (client.handshake.query['roomId']) {
       const roomId: string = client.handshake.query['roomId'].toString();
       this.logger.log(`Client connected roomId = ${roomId}`);
-      // await this.userModel.findByIdAndUpdate(roomId, {
-      //   $set: { isOnline: true },
-      // });
+      await this.userModel.findByIdAndUpdate(roomId, {
+        $set: { isOnline: true },
+      });
       client.join(roomId);
     }
   }
 
   @SubscribeMessage('messages')
   async handleMessages(client: Socket, payload: ReceiveMessageDto) {
-    const message = await this.roomService.receiveMessage(payload);
-    client.emit('message-recieve', {
-      message,
-    });
+    const { message, members } = await this.roomService.receiveMessage(payload);
+    members.map((member) =>
+      client.to(member.id.toString()).emit('message-recieve', {
+        message,
+      }),
+    );
   }
 }

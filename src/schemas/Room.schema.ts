@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import mongoose from 'mongoose';
-import { Sender } from './Message.schema';
+import { Message, Sender } from './Message.schema';
 
 const aggregatePaginate = require('mongoose-aggregate-paginate-v2');
 
@@ -19,6 +19,9 @@ export class Room {
 
   @Prop([{ type: Member }])
   members: Member[];
+
+  @Prop({ type: Message })
+  lastMessage: Message;
 }
 
 export const RoomSchema = SchemaFactory.createForClass(Room);
