@@ -6,6 +6,8 @@ import { User, UserSchema } from 'src/schemas/User.schema';
 import { Message, MessageSchema } from 'src/schemas/Message.schema';
 import { Room, RoomSchema } from 'src/schemas/Room.schema';
 import { CommonService } from 'src/common-service/common-service.service';
+import { SocketModule } from 'src/providers/socket/socket.module';
+import { forwardRef } from '@nestjs/common';
 
 @Module({
   imports: [

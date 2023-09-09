@@ -15,6 +15,8 @@ import { ReceiveMessageDto } from 'src/room/dto/receive-message.dto';
 import { RoomService } from 'src/room/room.service';
 import { CommonService } from 'src/common-service/common-service.service';
 import { Utils } from 'src/common/utils';
+import { MessageEventDto } from './dto/message-event.dto';
+import { NewGroupEventDto } from './dto/group-event.dto';
 
 @WebSocketGateway({
   cors: true,
@@ -62,7 +64,7 @@ export class SocketGateway
   }
 
   @SubscribeMessage('messages')
-  async handleMessages(client: Socket, payload: ReceiveMessageDto) {
+  async handleMessages(client: Socket, payload: MessageEventDto) {
     payload._id = Utils.createObjectId();
     const members = await this.commonService.getCache(payload.roomId);
     const message = {
@@ -75,12 +77,27 @@ export class SocketGateway
       },
       message: payload.message,
     };
-    console.log(members);
-    members.map((id) =>
-      client.to(id.toString()).emit('message-recieve', {
-        message,
-      }),
-    );
+    members.forEach((id) => {
+      if (id !== payload.senderId) {
+        client.to(id).emit('message-recieve', {
+          message,
+        });
+      }
+    });
     await this.roomService.receiveMessage(payload);
+  }
+
+  @SubscribeMessage('groups')
+  async handleGroups(client: Socket, payload: NewGroupEventDto) {
+    const group = await this.roomService.findOne(payload);
+    console.log(group);
+    const members = await this.commonService.getCache(group._id.toString());
+    members.forEach((id) => {
+      if (id !== payload.senderId) {
+        client.to(id).emit('new-group', {
+          group,
+        });
+      }
+    });
   }
 }

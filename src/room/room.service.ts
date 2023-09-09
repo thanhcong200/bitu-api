@@ -14,6 +14,10 @@ import { RoomSearchDto } from './dto/room-search.dto';
 import { ReceiveMessageDto } from './dto/receive-message.dto';
 import { SeenMessageDto } from './dto/seen-message.dto';
 import { CommonService } from 'src/common-service/common-service.service';
+import { SocketGateway } from 'src/providers/socket/socket.gateway';
+import { Inject } from '@nestjs/common';
+import { forwardRef } from '@nestjs/common';
+import { NewGroupEventDto } from 'src/providers/socket/dto/group-event.dto';
 
 @Injectable()
 export class RoomService {
@@ -94,15 +98,18 @@ export class RoomService {
         },
       },
     ];
-    return Utils.aggregatePaginate(this.roomModel, pipeline, {
-      ...requestData,
-      sort: {
-        'lastMessage.createdAt': 'desc',
-      },
-    });
+    return Utils.aggregatePaginate(this.roomModel, pipeline, requestData);
   }
 
-  findOne(id: string, requestData: RoomSearchDto) {
+  async findOne(requestData: NewGroupEventDto) {
+    const room = await this.roomModel.findById(requestData.roomId).lean();
+    return {
+      ...room,
+      partner: room.members[0],
+    };
+  }
+
+  findMessageByGroupId(id: string, requestData: RoomSearchDto) {
     const pipeline: mongoose.PipelineStage[] = [
       {
         $match: {
@@ -110,10 +117,7 @@ export class RoomService {
         },
       },
     ];
-    return Utils.aggregatePaginate(this.messageModel, pipeline, {
-      ...requestData,
-      sort: { createdAt: 'asc' },
-    });
+    return Utils.aggregatePaginate(this.messageModel, pipeline, requestData);
   }
 
   async receiveMessage(requestData: ReceiveMessageDto) {

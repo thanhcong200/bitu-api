@@ -34,8 +34,11 @@ export class RoomController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Query() requestData: RoomSearchDto) {
-    return this.roomService.findOne(id, requestData);
+  findMessageByGroupId(
+    @Param('id') id: string,
+    @Query() requestData: RoomSearchDto,
+  ) {
+    return this.roomService.findMessageByGroupId(id, requestData);
   }
 
   @Post('receive-message')
