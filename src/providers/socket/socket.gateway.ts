@@ -13,6 +13,8 @@ import { Socket, Server } from 'socket.io';
 import { User, UserDocument } from 'src/schemas/User.schema';
 import { ReceiveMessageDto } from 'src/room/dto/receive-message.dto';
 import { RoomService } from 'src/room/room.service';
+import { CommonService } from 'src/common-service/common-service.service';
+import { Utils } from 'src/common/utils';
 
 @WebSocketGateway({
   cors: true,
@@ -26,6 +28,7 @@ export class SocketGateway
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
     private roomService: RoomService,
+    private commonService: CommonService,
   ) {}
 
   @WebSocketServer()
@@ -60,11 +63,24 @@ export class SocketGateway
 
   @SubscribeMessage('messages')
   async handleMessages(client: Socket, payload: ReceiveMessageDto) {
-    const { message, members } = await this.roomService.receiveMessage(payload);
-    members.map((member) =>
-      client.to(member.id.toString()).emit('message-recieve', {
+    payload._id = Utils.createObjectId();
+    const members = await this.commonService.getCache(payload.roomId);
+    const message = {
+      _id: payload._id,
+      roomId: Utils.toObjectId(payload.roomId),
+      sender: {
+        id: payload.senderId,
+        username: null,
+        avatar: null,
+      },
+      message: payload.message,
+    };
+    console.log(members);
+    members.map((id) =>
+      client.to(id.toString()).emit('message-recieve', {
         message,
       }),
     );
+    await this.roomService.receiveMessage(payload);
   }
 }

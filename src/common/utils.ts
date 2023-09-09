@@ -1,11 +1,10 @@
 import { Logger } from '@nestjs/common';
 import ObjectID from 'bson-objectid';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 const CryptoJS = require('crypto-js');
 import { PagingDocument } from './common-type';
 import { ErrorCode } from './constants';
 import { ApiError } from './api';
-import mongoose from 'mongoose';
 const jwt = require('jsonwebtoken');
 export class Utils {
   private static readonly logger = new Logger(Utils.name);
@@ -145,10 +144,6 @@ export class Utils {
       model.aggregate(pipe),
       pagingOptions,
     ) as Promise<PagingDocument>;
-  }
-
-  public static isValidateHash(hash) {
-    return /^0x([A-Fa-f0-9]{64})$/.test(hash);
   }
 
   public static isEmpty(str) {

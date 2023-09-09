@@ -74,7 +74,7 @@ export class AuthService {
 
   async refreshToken(id: string) {
     const user = await this.userModel.findById(id).lean();
-    const payload = { id: user.id, username: user.username, role: user.role };
+    const payload = { id, username: user.username, role: user.role };
     return this.generateToken(payload);
   }
 

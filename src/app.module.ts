@@ -9,6 +9,7 @@ import * as redisStore from 'cache-manager-redis-store';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SocketModule } from './providers/socket/socket.module';
 import { RoomModule } from './room/room.module';
+import { CommonModule } from './common-service/common-service.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { RoomModule } from './room/room.module';
       isGlobal: true,
     }),
     MongooseModule.forRoot(process.env.MONGODB_URI),
+    CommonModule,
     SocketModule,
     AuthModule,
     UsersModule,

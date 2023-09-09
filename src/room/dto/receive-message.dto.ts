@@ -1,6 +1,8 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
 export class ReceiveMessageDto {
+  _id: object;
+
   @IsNotEmpty()
   @IsString()
   roomId: string;

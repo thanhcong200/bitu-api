@@ -5,6 +5,7 @@ import { SocketGateway } from './socket.gateway';
 import { Room, RoomSchema } from 'src/schemas/Room.schema';
 import { Message, MessageSchema } from 'src/schemas/Message.schema';
 import { RoomService } from 'src/room/room.service';
+import { CommonService } from 'src/common-service/common-service.service';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { RoomService } from 'src/room/room.service';
       { name: Message.name, schema: MessageSchema },
     ]),
   ],
-  providers: [SocketGateway, RoomService],
+  providers: [SocketGateway, RoomService, CommonService],
   exports: [SocketGateway],
 })
 export class SocketModule {}
