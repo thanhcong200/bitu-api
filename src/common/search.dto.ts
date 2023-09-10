@@ -18,6 +18,9 @@ export class SearchDto {
   limit = 10;
 
   @ApiProperty()
+  offset: number;
+
+  @ApiProperty()
   sort: object;
 
   @ApiProperty()

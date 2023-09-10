@@ -133,10 +133,14 @@ export class Utils {
   public static aggregatePaginate(model: any, pipe: any, query: any) {
     this.logger.debug('aggregatePaginate(): match', JSON.stringify(pipe));
     const pagingOptions: any = {
-      page: query.page,
       limit: query.limit,
       sort: query.sort ? query.sort : { createdAt: 'desc' },
     };
+    if (query.offset >= 0) {
+      pagingOptions['offset'] = query.offset;
+    } else if (query.page) {
+      pagingOptions['page'] = query.page;
+    }
     if (query.projection) {
       pagingOptions.projection = query.projection;
     }

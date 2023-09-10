@@ -97,6 +97,11 @@ export class RoomService {
           lastMessage: 1,
         },
       },
+      {
+        $sort: {
+          'lastMessage.createdAt': 1,
+        },
+      },
     ];
     return Utils.aggregatePaginate(this.roomModel, pipeline, requestData);
   }
