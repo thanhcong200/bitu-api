@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { CreateRoomDto } from './dto/create-room.dto';
-import { UpdateRoomDto } from './dto/update-room.dto';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from 'src/schemas/User.schema';
 import { Model } from 'mongoose';
@@ -14,9 +13,6 @@ import { RoomSearchDto } from './dto/room-search.dto';
 import { ReceiveMessageDto } from './dto/receive-message.dto';
 import { SeenMessageDto } from './dto/seen-message.dto';
 import { CommonService } from 'src/common-service/common-service.service';
-import { SocketGateway } from 'src/providers/socket/socket.gateway';
-import { Inject } from '@nestjs/common';
-import { forwardRef } from '@nestjs/common';
 import { NewGroupEventDto } from 'src/providers/socket/dto/group-event.dto';
 
 @Injectable()
@@ -123,6 +119,31 @@ export class RoomService {
       },
     ];
     return Utils.aggregatePaginate(this.messageModel, pipeline, requestData);
+  }
+
+  async findPartner(userId: string) {
+    const partners = await this.roomModel
+      .find(
+        { 'members.id': { $in: [Utils.toObjectId(userId)] } },
+        { 'members.id': 1 },
+      )
+      .lean();
+    return partners.map((partner) => {
+      const member = partner.members.find(
+        (member) => member.id !== Utils.toObjectId(userId),
+      );
+      return {
+        partnerId: member.id,
+        roomId: partner._id.toString(),
+      };
+    });
+  }
+
+  async findMembers(roomId: string) {
+    const room = await this.roomModel
+      .findOne({ _id: Utils.toObjectId(roomId) }, { 'members.id': 1, _id: 0 })
+      .lean();
+    return room.members.map((member) => member.id.toString());
   }
 
   async receiveMessage(requestData: ReceiveMessageDto) {

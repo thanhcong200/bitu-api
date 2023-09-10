@@ -4,5 +4,13 @@ export enum SOCKET_ROOM {
 }
 
 export enum SOCKET_EVENT {
-  NOTIFICATION = 'notification',
+  MESSAGE = 'message-recieve',
+  NEW_GROUP = 'new-group',
+  ONLINE = 'online',
+  OFFLINE = 'offline',
+}
+
+export enum SOCKET_SUBCRIBE {
+  MESSAGE = 'messages',
+  GROUP = 'groups',
 }

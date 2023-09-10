@@ -14,12 +14,10 @@ import { CommonModule } from './common-service/common-service.module';
 @Module({
   imports: [
     ScheduleModule.forRoot(),
-    CacheModule.register<RedisClientOptions>({
+    CacheModule.register({
       store: redisStore,
-      socket: {
-        host: process.env.REDIS_HOST,
-        port: Number(process.env.PORT),
-      },
+      host: process.env.REDIS_HOST,
+      port: Number(process.env.REDIS_PORT),
       ttl: Number(process.env.REDIS_TTL),
       isGlobal: true,
     }),
